@@ -75,20 +75,119 @@ reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
 read -p "Are you installing on a computer with an AMD[1] or Intel[2] cpu: " CPU
 
 # Minimal install with pacstrap (graphical setup will be done in another script)
-pacstrap /mnt base base-devel linux linux-firmware intel-ucode efibootmgr nano neovim git openssh networkmanager
+pacstrap /mnt base base-devel linux linux-firmware intel-ucode efibootmgr grub nano neovim git openssh networkmanager device-mapper mesa wget curl man-db man-pages diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc wpa_supplicant dialog os-prober xorg xorg-xinit xorg-xrandr openbox gnome-terminal firefox thunar nitrogen tint2 lxappearance
 
 # Generate fstab
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# Copy post-install system configuration scripts to new / (or currently /mnt for us before chroot)
-cp -rfv *.sh /mnt/
-chmod a+x *.sh
+# chroot into system
+arch-chroot /mnt /bin/bash <<EOF
 
-# chroot into installation
-arch-chroot /mnt 'sh -c /mnt/post-chroot.sh'
+# Setting system clock
+read -p "Enter the continent where you live: " CONTINENT
+read -p "Enter the city where you live: " CITY
+ln -sf /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime
 
-# arch-chroot /mnt bash ./post-chroot.sh
+# Setting hardware clock
+hwclock --systohc --localtime
 
-# arch-chroot /mnt /bin/bash <<EOF
-#   bash ./post-chroot.sh
-# EOF
+# Setting locales
+echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+echo "LANG=en_US.UTF-8" >> /etc/locale.conf
+locale-gen
+
+# Adding persistent keymap
+echo "KEYMAP=us" > /etc/vconsole.conf
+
+# Set hostname
+read -p "Enter a hostname for the computer: " HOSTNAME
+echo $HOSTNAME > /etc/hostname
+
+# Set-up hosts file
+echo "127.0.0.1 localhost" >> /etc/hosts
+echo "::1 localhost" >> /etc/hosts
+echo "127.0.1.1 ${HOSTNAME}.localdomain  ${HOSTNAME}" >> /etc/hosts
+
+# Set root password
+echo "Username: root"
+passwd
+
+
+# Create new sudo user
+read -p "Enter username: " USERNAME
+useradd -m -G wheel -s /bin/zsh ${USERNAME}
+usermod -a -G video ${USERNAME}
+passwd ${USERNAME}
+echo '%wheel ALL=(ALL) ALL' | EDITOR='tee -a' visudo
+
+# add 'Defaults !tty_tickets' to not have to retype in your sudo password all of the times
+# also add Luke Smith thing so I can reboot without sudo
+
+# # Generate initramfs
+# sed -i 's/^HOOKS.*/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt sd-lvm2 filesystems fsck)/' /etc/mkinitcpio.conf
+# sed -i 's/^MODULES.*/MODULES=(ext4 intel_agp i915)/' /etc/mkinitcpio.conf
+# mkinitcpio -p linux
+# mkinitcpio -p linux-lts
+# echo "Setting up systemd-boot"
+# bootctl --path=/boot install
+# mkdir -p /boot/loader/
+# touch /boot/loader/loader.conf
+# tee -a /boot/loader/loader.conf << END
+# default arch
+# timeout 1
+# editor 0
+# END
+# mkdir -p /boot/loader/entries/
+# touch /boot/loader/entries/arch.conf
+# tee -a /boot/loader/entries/arch.conf << END
+# title ArchLinux
+# linux /vmlinuz-linux
+# initrd /intel-ucode.img
+# initrd /initramfs-linux.img
+# options rd.luks.name=$(blkid -s UUID -o value /dev/nvme0n1p2)=cryptlvm root=/dev/vg0/root resume=/dev/vg0/swap rd.luks.options=discard i915.fastboot=1 quiet rw
+# END
+# touch /boot/loader/entries/archlts.conf
+# tee -a /boot/loader/entries/archlts.conf << END
+# title ArchLinux
+# linux /vmlinuz-linux-lts
+# initrd /intel-ucode.img
+# initrd /initramfs-linux-lts.img
+# options rd.luks.name=$(blkid -s UUID -o value /dev/nvme0n1p2)=cryptlvm root=/dev/vg0/root resume=/dev/vg0/swap rd.luks.options=discard i915.fastboot=1 quiet rw
+# END
+# echo "Setting up Pacman hook for automatic systemd-boot updates"
+# mkdir -p /etc/pacman.d/hooks/
+# touch /etc/pacman.d/hooks/systemd-boot.hook
+# tee -a /etc/pacman.d/hooks/systemd-boot.hook << END
+# [Trigger]
+# Type = Package
+# Operation = Upgrade
+# Target = systemd
+# [Action]
+# Description = Updating systemd-boot
+# When = PostTransaction
+# Exec = /usr/bin/bootctl update
+# 
+
+# Setup bootloader
+# read -p "Would you like to install grub[1] or systemd-boot[1]: " BOOTLOADER
+
+# Install grub as bootloader
+pacman -S grub --noconfirm
+mkdir /boot/grub/
+grub-mkconfig -o /boot/grub/grub.cfg
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arch_grub --recheck
+
+# Enable periodic TRIM
+systemctl enable fstrim.timer
+
+# Enable NetworkManager
+systemctl enable NetworkManager
+
+# Enable openssh
+systemctl enable sshd.service
+
+EOF
+
+umount -R /mnt
+
+echo "ArchLinux is ready. You can reboot now!"
