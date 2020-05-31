@@ -85,7 +85,7 @@ cp -rfv *.sh /mnt/
 chmod a+x *.sh
 
 # chroot into installation
-arch-chroot /mnt 'sh -c /mnt/chroot.sh'
+arch-chroot /mnt 'sh -c /mnt/post-chroot.sh'
 
 # arch-chroot /mnt bash ./post-chroot.sh
 
