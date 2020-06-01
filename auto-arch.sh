@@ -12,73 +12,97 @@ echo "Which drive you wish to install to? "
 echo "Your argument should have a format like this -> '/dev/sda'"
 read -p "Enter the path to that drive that you wish to install to: " TGTDEV
 
-# to create the partitions programatically (rather than manually)
-# we're going to simulate the manual input to fdisk
-# The sed script strips off all the comments so that we can 
-# document what we're doing in-line with the actual commands
-# Note that a blank line (commented as "defualt" will send a empty
-# line terminated with a newline to take the fdisk default.
-sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${TGTDEV}
-  g # clear the in memory partition table, and make a new gpt one
-  n # new partition
-  1 # partition number 1
-    # default - start at beginning of disk 
-  +512M # 512MB boot parttion
-  t # type of partition
-  1 # partition type 1 'efi'
-  n # new partition
-  2 # partition number 2
-    # default, start immediately after preceding partition
-  +32G # 32Gib root partition
-  t # type of partition
-  2 # partition number 2
-  24 # partition type 24 'Linux root (x86-64)'
-  n # new partition
-  3 # partition number 3
-    # default, start immediately after preceding partition
-    # default, Go to the end of the disk
-  t # type of partition
-  3 # partition number 3
-  28 # partition type 28 'Linux Home'
-  p # print the in-memory partition table
-  w # write the partition table
-EOF
+# Alternatively to the solution below we could cfdisk instead
+ cfdisk ${TGTDEV}
+
+## to create the partitions programatically (rather than manually)
+## we're going to simulate the manual input to fdisk
+##The sed script strips off all the comments so that we can 
+## document what we're doing in-line with the actual commands
+## Note that a blank line (commented as "defualt" will send a empty
+## line terminated with a newline to take the fdisk default.
+#sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${TGTDEV}
+#  g # clear the in memory partition table, and make a new gpt one
+#  n # new partition
+#  1 # partition number 1
+#    # default - start at beginning of disk 
+#  +512M # 512MB boot parttion
+#  t # type of partition
+#  1 # partition type 1 'efi'
+#  n # new partition
+#  2 # partition number 2
+#   # default, start immediately after preceding partition
+#  +32G # 32Gib root partition
+# t # type of partition
+#  2 # partition number 2
+#  24 # partition type 24 'Linux root (x86-64)'
+#  n # new partition
+#  3 # partition number 3
+#    # default, start immediately after preceding partition
+#    # default, Go to the end of the disk
+#  t # type of partition
+#  3 # partition number 3
+#  28 # partition type 28 'Linux Home'
+#  p # print the in-memory partition table
+#  w # write the partition table
+#EOF
 
 # Format the partitions
 mkfs.fat -F32 ${TGTDEV}1
 mkfs.ext4 ${TGTDEV}2
 mkfs.ext4 ${TGTDEV}3
 
-# Initate pacman keyring
-pacman-key --init
-pacman-key --populate archlinux
-pacman-key --refresh-keys
+## Initate pacman keyring
+#pacman-key --init
+#pacman-key --populate archlinux
+#pacman-key --refresh-keys
 
 # Mount the partitions
-mkdir /mnt/boot
-mkdir /mnt/boot/efi
-mount ${TGTDEV}1 /mnt/boot/efi
+#mkdir /mnt/boot
+#mkdir /mnt/boot/efi
+#mount ${TGTDEV}1 /mnt/boot/efi
 mount ${TGTDEV}2 /mnt
 mkdir /mnt/home
 mount ${TGTDEV}3 /mnt/home
 
-# Install reflector for sorting mirrors
-pacman -Sy reflector --noconfirm
-
-# Store a backup of the mirrors that came with the installation
-mv /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
-
-# Get the fastest in-sync (up-to-date) mirrors and store 10 of them (sorted) in mirrorlist
-reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
-
 # Setup the cpu microcode package
-read -p "Are you installing on a computer with an AMD[1] or Intel[2] cpu: " CPU
+#read -p "Are you installing on a computer with an AMD[1] or Intel[2] cpu: " CPU
 
 # Minimal install with pacstrap (graphical setup will be done in another script)
-pacstrap /mnt base base-devel linux linux-firmware intel-ucode efibootmgr grub nano neovim git openssh networkmanager device-mapper mesa wget curl man-db man-pages diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc wpa_supplicant dialog os-prober xorg xorg-xinit xorg-xrandr openbox gnome-terminal firefox thunar nitrogen tint2 lxappearance
+# pacstrap /mnt base base-devel linux linux-firmware intel-ucode efibootmgr grub nano neovim git openssh networkmanager device-mapper mesa wget curl man-db man-pages diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc wpa_supplicant dialog os-prober xorg xorg-xinit xorg-xrandr openbox gnome-terminal firefox thunar nitrogen tint2 lxappearance
+pacstrap /mnt base base-devel linux linux-firmware nano vim
 
 # Generate fstab
-genfstab -U /mnt >> /mnt/etc/fstab
+genfstab -U -p /mnt >> /mnt/etc/fstab
+
+##############################################################################
+# The folowing code block is exactly what i did to install based off of a guid on tecmint
+##############################################################################
+echo "archbox" > /etc/hostname
+pacman -S nano
+nano /etc/locale.gen # comment out the two en_US*
+locale-gen
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+export LANG=en_US.UTF-8
+ln -s /usr/share/zoneinfo/America/Detroit /etc/localtime # chech into this may not be right
+hwclock --systohc --utc
+pacman -Syu
+useradd -mg users -G wheel,storage,power -s /bin/bash wilson
+passwd wilson
+chage -d 0 wilson
+pacman -S sudo
+pacman -S vim
+visudo
+pacman -S grub efibootmgr dosfstools os-prober mtools
+mkdir /boot/EFI
+mount /dev/sda1 /boot/EFI
+grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
+grub-mkconfig -o /boot/grub/grub.cfg
+exit
+umount -a
+telinit 6
+
+##############################################################################
 
 # chroot into system
 arch-chroot /mnt /bin/bash <<EOF
@@ -96,8 +120,8 @@ echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
 echo "LANG=en_US.UTF-8" >> /etc/locale.conf
 locale-gen
 
-# Adding persistent keymap
-echo "KEYMAP=us" > /etc/vconsole.conf
+# Adding persistent keymap (Will probably never need this as the US layout is default)
+# echo "KEYMAP=us" > /etc/vconsole.conf
 
 # Set hostname
 read -p "Enter a hostname for the computer: " HOSTNAME
@@ -176,6 +200,15 @@ pacman -S grub --noconfirm
 mkdir /boot/grub/
 grub-mkconfig -o /boot/grub/grub.cfg
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arch_grub --recheck
+
+# Install reflector for sorting mirrors
+pacman -S reflector --noconfirm
+
+# Store a backup of the mirrors that came with the installation
+mv /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+
+# Get the fastest in-sync (up-to-date) mirrors and store 10 of them (sorted) in mirrorlist
+reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
 
 # Enable periodic TRIM
 systemctl enable fstrim.timer
