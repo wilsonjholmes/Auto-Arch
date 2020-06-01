@@ -104,123 +104,123 @@ telinit 6
 
 ##############################################################################
 
-# chroot into system
-arch-chroot /mnt /bin/bash <<EOF
+# # chroot into system
+# arch-chroot /mnt /bin/bash <<EOF
 
-# Setting system clock
-read -p "Enter the continent where you live: " CONTINENT
-read -p "Enter the city where you live: " CITY
-ln -sf /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime
+# # Setting system clock
+# read -p "Enter the continent where you live: " CONTINENT
+# read -p "Enter the city where you live: " CITY
+# ln -sf /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime
 
-# Setting hardware clock
-hwclock --systohc --localtime
+# # Setting hardware clock
+# hwclock --systohc --localtime
 
-# Setting locales
-echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
-echo "LANG=en_US.UTF-8" >> /etc/locale.conf
-locale-gen
+# # Setting locales
+# echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen
+# echo "LANG=en_US.UTF-8" >> /etc/locale.conf
+# locale-gen
 
-# Adding persistent keymap (Will probably never need this as the US layout is default)
-# echo "KEYMAP=us" > /etc/vconsole.conf
+# # Adding persistent keymap (Will probably never need this as the US layout is default)
+# # echo "KEYMAP=us" > /etc/vconsole.conf
 
-# Set hostname
-read -p "Enter a hostname for the computer: " HOSTNAME
-echo $HOSTNAME > /etc/hostname
+# # Set hostname
+# read -p "Enter a hostname for the computer: " HOSTNAME
+# echo $HOSTNAME > /etc/hostname
 
-# Set-up hosts file
-echo "127.0.0.1 localhost" >> /etc/hosts
-echo "::1 localhost" >> /etc/hosts
-echo "127.0.1.1 ${HOSTNAME}.localdomain  ${HOSTNAME}" >> /etc/hosts
+# # Set-up hosts file
+# echo "127.0.0.1 localhost" >> /etc/hosts
+# echo "::1 localhost" >> /etc/hosts
+# echo "127.0.1.1 ${HOSTNAME}.localdomain  ${HOSTNAME}" >> /etc/hosts
 
-# Set root password
-echo "Username: root"
-passwd
+# # Set root password
+# echo "Username: root"
+# passwd
 
 
-# Create new sudo user
-read -p "Enter username: " USERNAME
-useradd -m -G wheel -s /bin/zsh ${USERNAME}
-usermod -a -G video ${USERNAME}
-passwd ${USERNAME}
-echo '%wheel ALL=(ALL) ALL' | EDITOR='tee -a' visudo
+# # Create new sudo user
+# read -p "Enter username: " USERNAME
+# useradd -m -G wheel -s /bin/zsh ${USERNAME}
+# usermod -a -G video ${USERNAME}
+# passwd ${USERNAME}
+# echo '%wheel ALL=(ALL) ALL' | EDITOR='tee -a' visudo
 
-# add 'Defaults !tty_tickets' to not have to retype in your sudo password all of the times
-# also add Luke Smith thing so I can reboot without sudo
+# # add 'Defaults !tty_tickets' to not have to retype in your sudo password all of the times
+# # also add Luke Smith thing so I can reboot without sudo
 
-# # Generate initramfs
-# sed -i 's/^HOOKS.*/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt sd-lvm2 filesystems fsck)/' /etc/mkinitcpio.conf
-# sed -i 's/^MODULES.*/MODULES=(ext4 intel_agp i915)/' /etc/mkinitcpio.conf
-# mkinitcpio -p linux
-# mkinitcpio -p linux-lts
-# echo "Setting up systemd-boot"
-# bootctl --path=/boot install
-# mkdir -p /boot/loader/
-# touch /boot/loader/loader.conf
-# tee -a /boot/loader/loader.conf << END
-# default arch
-# timeout 1
-# editor 0
-# END
-# mkdir -p /boot/loader/entries/
-# touch /boot/loader/entries/arch.conf
-# tee -a /boot/loader/entries/arch.conf << END
-# title ArchLinux
-# linux /vmlinuz-linux
-# initrd /intel-ucode.img
-# initrd /initramfs-linux.img
-# options rd.luks.name=$(blkid -s UUID -o value /dev/nvme0n1p2)=cryptlvm root=/dev/vg0/root resume=/dev/vg0/swap rd.luks.options=discard i915.fastboot=1 quiet rw
-# END
-# touch /boot/loader/entries/archlts.conf
-# tee -a /boot/loader/entries/archlts.conf << END
-# title ArchLinux
-# linux /vmlinuz-linux-lts
-# initrd /intel-ucode.img
-# initrd /initramfs-linux-lts.img
-# options rd.luks.name=$(blkid -s UUID -o value /dev/nvme0n1p2)=cryptlvm root=/dev/vg0/root resume=/dev/vg0/swap rd.luks.options=discard i915.fastboot=1 quiet rw
-# END
-# echo "Setting up Pacman hook for automatic systemd-boot updates"
-# mkdir -p /etc/pacman.d/hooks/
-# touch /etc/pacman.d/hooks/systemd-boot.hook
-# tee -a /etc/pacman.d/hooks/systemd-boot.hook << END
-# [Trigger]
-# Type = Package
-# Operation = Upgrade
-# Target = systemd
-# [Action]
-# Description = Updating systemd-boot
-# When = PostTransaction
-# Exec = /usr/bin/bootctl update
-# 
+# # # Generate initramfs
+# # sed -i 's/^HOOKS.*/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt sd-lvm2 filesystems fsck)/' /etc/mkinitcpio.conf
+# # sed -i 's/^MODULES.*/MODULES=(ext4 intel_agp i915)/' /etc/mkinitcpio.conf
+# # mkinitcpio -p linux
+# # mkinitcpio -p linux-lts
+# # echo "Setting up systemd-boot"
+# # bootctl --path=/boot install
+# # mkdir -p /boot/loader/
+# # touch /boot/loader/loader.conf
+# # tee -a /boot/loader/loader.conf << END
+# # default arch
+# # timeout 1
+# # editor 0
+# # END
+# # mkdir -p /boot/loader/entries/
+# # touch /boot/loader/entries/arch.conf
+# # tee -a /boot/loader/entries/arch.conf << END
+# # title ArchLinux
+# # linux /vmlinuz-linux
+# # initrd /intel-ucode.img
+# # initrd /initramfs-linux.img
+# # options rd.luks.name=$(blkid -s UUID -o value /dev/nvme0n1p2)=cryptlvm root=/dev/vg0/root resume=/dev/vg0/swap rd.luks.options=discard i915.fastboot=1 quiet rw
+# # END
+# # touch /boot/loader/entries/archlts.conf
+# # tee -a /boot/loader/entries/archlts.conf << END
+# # title ArchLinux
+# # linux /vmlinuz-linux-lts
+# # initrd /intel-ucode.img
+# # initrd /initramfs-linux-lts.img
+# # options rd.luks.name=$(blkid -s UUID -o value /dev/nvme0n1p2)=cryptlvm root=/dev/vg0/root resume=/dev/vg0/swap rd.luks.options=discard i915.fastboot=1 quiet rw
+# # END
+# # echo "Setting up Pacman hook for automatic systemd-boot updates"
+# # mkdir -p /etc/pacman.d/hooks/
+# # touch /etc/pacman.d/hooks/systemd-boot.hook
+# # tee -a /etc/pacman.d/hooks/systemd-boot.hook << END
+# # [Trigger]
+# # Type = Package
+# # Operation = Upgrade
+# # Target = systemd
+# # [Action]
+# # Description = Updating systemd-boot
+# # When = PostTransaction
+# # Exec = /usr/bin/bootctl update
+# # 
 
-# Setup bootloader
-# read -p "Would you like to install grub[1] or systemd-boot[1]: " BOOTLOADER
+# # Setup bootloader
+# # read -p "Would you like to install grub[1] or systemd-boot[1]: " BOOTLOADER
 
-# Install grub as bootloader
-pacman -S grub --noconfirm
-mkdir /boot/grub/
-grub-mkconfig -o /boot/grub/grub.cfg
-grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arch_grub --recheck
+# # Install grub as bootloader
+# pacman -S grub --noconfirm
+# mkdir /boot/grub/
+# grub-mkconfig -o /boot/grub/grub.cfg
+# grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arch_grub --recheck
 
-# Install reflector for sorting mirrors
-pacman -S reflector --noconfirm
+# # Install reflector for sorting mirrors
+# pacman -S reflector --noconfirm
 
-# Store a backup of the mirrors that came with the installation
-mv /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+# # Store a backup of the mirrors that came with the installation
+# mv /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
 
-# Get the fastest in-sync (up-to-date) mirrors and store 10 of them (sorted) in mirrorlist
-reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
+# # Get the fastest in-sync (up-to-date) mirrors and store 10 of them (sorted) in mirrorlist
+# reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
 
-# Enable periodic TRIM
-systemctl enable fstrim.timer
+# # Enable periodic TRIM
+# systemctl enable fstrim.timer
 
-# Enable NetworkManager
-systemctl enable NetworkManager
+# # Enable NetworkManager
+# systemctl enable NetworkManager
 
-# Enable openssh
-systemctl enable sshd.service
+# # Enable openssh
+# systemctl enable sshd.service
 
-EOF
+# EOF
 
-umount -R /mnt
+# umount -R /mnt
 
-echo "ArchLinux is ready. You can reboot now!"
+# echo "ArchLinux is ready. You can reboot now!"
