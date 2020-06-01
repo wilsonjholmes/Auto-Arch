@@ -145,7 +145,6 @@ genfstab -U -p /mnt >> /mnt/etc/fstab
 ##############################################################################
 arch-chroot /mnt <<EOF
 echo ${HOSTNAME} > /etc/hostname
-pacman -S nano --
 sed -i -e 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
 sed -i -e 's/#en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
 locale-gen
@@ -157,12 +156,13 @@ echo "127.0.1.1 ${HOSTNAME}.localdomain ${HOSTNAME}" >> /mnt/etc/hosts
 ln -s /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime # check into this may not be right
 hwclock --systohc
 pacman -Syu --noconfirm
-useradd -mg users -G wheel,storage,power -s /bin/zsh wilson
-passwd wilson
+
+'echo "Enter password for root: " && read ROOTPASS && echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd'
+
+useradd -mg users -G wheel,storage,power -s /bin/zsh ${USERNAME}
+'echo "Enter password for ${USERNAME}: " && read USERPASS && echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}'
 
 chage -d 0 wilson
-pacman -S sudo --noconfirm
-pacman -S vim --noconfirm
 sed -i -e 's/# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
 
 pacman -S grub efibootmgr dosfstools os-prober mtools --noconfirm
