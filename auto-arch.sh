@@ -60,8 +60,8 @@ lsblk
 
 # Set drive for installation
 echo ; echo
-echo "Which drive you wish to install to? " ; echo
-echo "Your argument should have a format like this -> '/dev/sda'"
+echo "Which drive (from the above list) do you wish to install to? " ; echo ; echo
+echo "The path to your installation drive should have a format like this -> '/dev/sda'"
 read -p "Enter the path to that drive that you wish to install to: " TGTDEV
 
 # # Alternatively to the auto format solution below you could cfdisk manually
@@ -157,10 +157,10 @@ ln -s /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime # check into this 
 hwclock --systohc
 pacman -Syu --noconfirm
 
-'echo "Enter password for root: " && read ROOTPASS && echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd'
+echo "Enter password for root: " && read ROOTPASS && echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd
 
 useradd -mg users -G wheel,storage,power -s /bin/zsh ${USERNAME}
-'echo "Enter password for ${USERNAME}: " && read USERPASS && echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}'
+echo "Enter password for ${USERNAME}: " && read USERPASS && echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}
 
 chage -d 0 wilson
 sed -i -e 's/# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
@@ -168,6 +168,9 @@ sed -i -e 's/# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' 
 pacman -S grub efibootmgr dosfstools os-prober mtools --noconfirm
 mkdir /boot/EFI
 mount ${TGTDEV}1 /boot/EFI
+
+genfstab -U -p / >> /etc/fstab
+
 grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
 grub-mkconfig -o /boot/grub/grub.cfg
 EOF
