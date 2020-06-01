@@ -1,51 +1,103 @@
 #! /bin/bash
 set -e # Stop script on error
 
+# boot partition size, in MB
+BOOTPARTSIZE=512
+
+# root partition size, in GB
+ROOTPARTSIZE=32
+
+# hostname
+HOSTNAME=MCRN-Donnager
+
+# user
+USERNAME=wilson
+
+# locale
+CONTINENT=AMERICA
+CITY=Detroit
+
+echo "
+
+					  Welcome to...
+
+      ___           ___           ___           ___     
+     /\  \         /\__\         /\  \         /\  \    
+    /::\  \       /:/  /         \:\  \       /::\  \   
+   /:/\:\  \     /:/  /           \:\  \     /:/\:\  \  
+  /::\~\:\  \   /:/  /  ___       /::\  \   /:/  \:\  \ 
+ /:/\:\ \:\__\ /:/__/  /\__\     /:/\:\__\ /:/__/ \:\__\\
+ \/__\:\/:/  / \:\  \ /:/  /    /:/  \/__/ \:\  \ /:/  /
+      \::/  /   \:\  /:/  /    /:/  /       \:\  /:/  / 
+      /:/  /     \:\/:/  /     \/__/         \:\/:/  /  
+     /:/  /       \::/  /                     \::/  /   
+     \/__/         \/__/                       \/__/    
+      ___           ___           ___           ___     
+     /\  \         /\  \         /\  \         /\__\    
+    /::\  \       /::\  \       /::\  \       /:/  /    
+   /:/\:\  \     /:/\:\  \     /:/\:\  \     /:/__/     
+  /::\~\:\  \   /::\~\:\  \   /:/  \:\  \   /::\  \ ___ 
+ /:/\:\ \:\__\ /:/\:\ \:\__\ /:/__/ \:\__\ /:/\:\  /\__\\
+ \/__\:\/:/  / \/_|::\/:/  / \:\  \  \/__/ \/__\:\/:/  /
+      \::/  /     |:|::/  /   \:\  \            \::/  / 
+      /:/  /      |:|\/__/     \:\  \           /:/  /  
+     /:/  /       |:|  |        \:\__\         /:/  /   
+     \/__/         \|__|         \/__/         \/__/    
+
+     			
+     		   Press any key to continue.
+"
+
+# Don't start until user is ready
+read ; echo
+
 # Set up time
 timedatectl set-ntp true
 
 # show drives available
+echo "Here are the drives that are seen by your system." ; echo
 lsblk
 
 # Set drive for installation
+echo
 echo "Which drive you wish to install to? "
 echo "Your argument should have a format like this -> '/dev/sda'"
 read -p "Enter the path to that drive that you wish to install to: " TGTDEV
 
-# Alternatively to the solution below we could cfdisk instead
- cfdisk ${TGTDEV}
+# # Alternatively to the auto format solution below you could cfdisk manually
+#  cfdisk ${TGTDEV}
 
-## to create the partitions programatically (rather than manually)
-## we're going to simulate the manual input to fdisk
-##The sed script strips off all the comments so that we can 
-## document what we're doing in-line with the actual commands
-## Note that a blank line (commented as "defualt" will send a empty
-## line terminated with a newline to take the fdisk default.
-#sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${TGTDEV}
-#  g # clear the in memory partition table, and make a new gpt one
-#  n # new partition
-#  1 # partition number 1
-#    # default - start at beginning of disk 
-#  +512M # 512MB boot parttion
-#  t # type of partition
-#  1 # partition type 1 'efi'
-#  n # new partition
-#  2 # partition number 2
-#   # default, start immediately after preceding partition
-#  +32G # 32Gib root partition
-# t # type of partition
-#  2 # partition number 2
-#  24 # partition type 24 'Linux root (x86-64)'
-#  n # new partition
-#  3 # partition number 3
-#    # default, start immediately after preceding partition
-#    # default, Go to the end of the disk
-#  t # type of partition
-#  3 # partition number 3
-#  28 # partition type 28 'Linux Home'
-#  p # print the in-memory partition table
-#  w # write the partition table
-#EOF
+# to create the partitions programatically (rather than manually)
+# we're going to simulate the manual input to fdisk
+#The sed script strips off all the comments so that we can 
+# document what we're doing in-line with the actual commands
+# Note that a blank line (commented as "defualt" will send a empty
+# line terminated with a newline to take the fdisk default.
+sed -e 's/\s*\([\+0-9a-zA-Z]*\).*/\1/' << EOF | fdisk ${TGTDEV}
+ g # clear the in memory partition table, and make a new gpt one
+ n # new partition
+ 1 # partition number 1
+   # default - start at beginning of disk 
+ +${BOOTPARTSIZE}M # 512MiB boot parttion
+ t # type of partition
+ 1 # partition type 1 'efi'
+ n # new partition
+ 2 # partition number 2
+  # default, start immediately after preceding partition
+ +${ROOTPARTSIZE}G # 32Gib root partition
+t # type of partition
+ 2 # partition number 2
+ 24 # partition type 24 'Linux root (x86-64)'
+ n # new partition
+ 3 # partition number 3
+   # default, start immediately after preceding partition
+   # default, Go to the end of the disk
+ t # type of partition
+ 3 # partition number 3
+ 28 # partition type 28 'Linux Home'
+ p # print the in-memory partition table
+ w # write the partition table
+EOF
 
 # Format the partitions
 mkfs.fat -F32 ${TGTDEV}1
@@ -69,8 +121,12 @@ mount ${TGTDEV}3 /mnt/home
 #read -p "Are you installing on a computer with an AMD[1] or Intel[2] cpu: " CPU
 
 # Minimal install with pacstrap (graphical setup will be done in another script)
-# pacstrap /mnt base base-devel linux linux-firmware intel-ucode efibootmgr grub nano neovim git openssh networkmanager device-mapper mesa wget curl man-db man-pages diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc wpa_supplicant dialog os-prober xorg xorg-xinit xorg-xrandr openbox gnome-terminal firefox thunar nitrogen tint2 lxappearance
-pacstrap /mnt base base-devel linux linux-firmware nano vim
+# pacstrap /mnt base base-devel linux linux-firmware intel-ucode efibootmgr grub \
+# nano neovim git openssh networkmanager device-mapper mesa wget curl man-db man-pages \
+# diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc \
+# wpa_supplicant dialog os-prober xorg xorg-xinit xorg-xrandr openbox gnome-terminal \
+# firefox thunar nitrogen tint2 lxappearance
+pacstrap /mnt base base-devel linux linux-firmware nano vim zsh
 
 # Generate fstab
 genfstab -U -p /mnt >> /mnt/etc/fstab
@@ -79,27 +135,30 @@ genfstab -U -p /mnt >> /mnt/etc/fstab
 # The folowing code block is exactly what i did to install based off of a guid on tecmint
 ##############################################################################
 arch-chroot /mnt <<EOF
-echo "archbox" > /etc/hostname
-pacman -S nano --noconfirm
-nano /etc/locale.gen # comment out the two en_US*
-
+echo ${HOSTNAME} > /etc/hostname
+pacman -S nano --
+sed -i -e 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen
+sed -i -e 's/#en_US ISO-8859-1/en_US ISO-8859-1/g' /etc/locale.gen
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 export LANG=en_US.UTF-8
-ln -s /usr/share/zoneinfo/America/Detroit /etc/localtime # chech into this may not be right
-hwclock --systohc --utc
+echo "127.0.0.1 localhost" >> /mnt/etc/hosts
+echo "::1 localhost" >> /mnt/etc/hosts
+echo "127.0.1.1 ${HOSTNAME}.localdomain ${HOSTNAME}" >> /mnt/etc/hosts
+ln -s /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime # check into this may not be right
+hwclock --systohc
 pacman -Syu --noconfirm
-useradd -mg users -G wheel,storage,power -s /bin/bash wilson
+useradd -mg users -G wheel,storage,power -s /bin/zsh wilson
 passwd wilson
 
 chage -d 0 wilson
 pacman -S sudo --noconfirm
 pacman -S vim --noconfirm
-visudo
+sed -i -e 's/# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
 
 pacman -S grub efibootmgr dosfstools os-prober mtools --noconfirm
 mkdir /boot/EFI
-mount /dev/sda1 /boot/EFI
+mount ${TGTDEV}1 /boot/EFI
 grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
 grub-mkconfig -o /boot/grub/grub.cfg
 EOF
