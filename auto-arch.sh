@@ -80,21 +80,24 @@ genfstab -U -p /mnt >> /mnt/etc/fstab
 ##############################################################################
 arch-chroot /mnt <<EOF
 echo "archbox" > /etc/hostname
-pacman -S nano
+pacman -S nano --noconfirm
 nano /etc/locale.gen # comment out the two en_US*
+
 locale-gen
 echo "LANG=en_US.UTF-8" > /etc/locale.conf
 export LANG=en_US.UTF-8
 ln -s /usr/share/zoneinfo/America/Detroit /etc/localtime # chech into this may not be right
 hwclock --systohc --utc
-pacman -Syu
+pacman -Syu --noconfirm
 useradd -mg users -G wheel,storage,power -s /bin/bash wilson
 passwd wilson
+
 chage -d 0 wilson
-pacman -S sudo
-pacman -S vim
+pacman -S sudo --noconfirm
+pacman -S vim --noconfirm
 visudo
-pacman -S grub efibootmgr dosfstools os-prober mtools
+
+pacman -S grub efibootmgr dosfstools os-prober mtools --noconfirm
 mkdir /boot/EFI
 mount /dev/sda1 /boot/EFI
 grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
