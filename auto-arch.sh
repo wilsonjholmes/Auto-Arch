@@ -66,7 +66,8 @@ read -p "Enter the path to that drive that you wish to install to: " TGTDEV
 
 # Set passwords for users
 echo ; echo ; echo
-read -p "Enter a password for root: " ROOTPASS
+read -p "Enter a password for the root user: " ROOTPASS
+read -p "Enter a username: " USERNAME
 read -p "Enter a password for ${USERNAME}: " USERPASS
 echo ; echo ; echo
 
@@ -117,15 +118,31 @@ mkfs.ext4 ${TGTDEV}3
 #pacman-key --refresh-keys
 
 # Mount the partitions
-#mkdir /mnt/boot
-#mkdir /mnt/boot/efi
-#mount ${TGTDEV}1 /mnt/boot/efi
 mount ${TGTDEV}2 /mnt
 mkdir /mnt/home
 mount ${TGTDEV}3 /mnt/home
 
 # Setup the cpu microcode package
-#read -p "Are you installing on a computer with an AMD[1] or Intel[2] cpu: " CPU
+read -p "Do you want to install a microcode package for your cpu? Yes[y] or No[n]: " CPU
+echo "Are you installing on a computer with an AMD[1] or Intel[2] cpu?"
+
+if [ ${CPU} == y ]
+then
+
+	if (( ${CPUUCODE} == 1 ))
+	then
+		CPUUCODE=" amd-ucode "
+		echo "The AMD microcode package will be installed."
+	else
+		CPUUCODE=" intel-ucode "
+		echo "The Intel microcode package will be installed."
+	fi
+
+else
+	CPUUCODE=" "
+	echo "No microcode packages will be installed."
+fi
+
 
 # Install reflector for sorting mirrors
 pacman -Sy reflector --noconfirm
@@ -142,7 +159,7 @@ reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
 # diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc \
 # wpa_supplicant dialog os-prober xorg xorg-xinit xorg-xrandr openbox gnome-terminal \
 # firefox thunar nitrogen tint2 lxappearance
-pacstrap /mnt base base-devel linux linux-firmware nano vim neovim git openssh networkmanager wget curl man-db man-pages exa dosfstools diffutils neofetch sl figlet cowsay ranger htop
+pacstrap /mnt base base-devel linux linux-firmware${CPUUCODE}nano vim neovim git zsh openssh networkmanager wget curl man-db man-pages exa dosfstools diffutils neofetch sl figlet cowsay ranger htop
 
 # Generate fstab (EFI stuff is intentionally left out of this to save me from messing up something by accident)
 genfstab -U -p /mnt >> /mnt/etc/fstab
@@ -175,6 +192,8 @@ mount ${TGTDEV}1 /boot/EFI
 grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
 grub-mkconfig -o /boot/grub/grub.cfg
 
+pacman -S xorg xorg-xinit openbox --noconfirm
+
 # Enable periodic TRIM
 systemctl enable fstrim.timer
 
@@ -184,7 +203,7 @@ systemctl enable NetworkManager
 # Enable openssh
 systemctl enable sshd.service
 
-sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+# sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 EOF
 umount -R /mnt
 telinit 6

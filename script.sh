@@ -37,7 +37,18 @@ read ; echo
 
 # show drives available
 echo "Here are the drives that are seen by your system." ; echo
-lsblk
+
+
+    if [ $1 -ge 18 ]
+    then
+    echo You may go to the party.
+    elif [ $2 == 'yes' ]
+    then
+    echo You may go to the party but be back before midnight.
+    else
+    echo You may not go to the party.
+    fi
+
 
 # Set drive for installation
 echo
