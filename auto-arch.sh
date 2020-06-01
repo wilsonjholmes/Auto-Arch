@@ -64,6 +64,13 @@ echo "Which drive from the above list do you wish to install to? " ; echo
 echo "The path to your installation drive should have a format like this -> '/dev/sda'"
 read -p "Enter the path to that drive that you wish to install to: " TGTDEV
 
+# Set passwords for users
+echo ; echo ; echo
+read -p "Enter a password for root: " ROOTPASS
+read -p "Enter a password for ${USERNAME}: " USERPASS
+echo ; echo ; echo
+
+
 # # Alternatively to the auto format solution below you could cfdisk manually
 #  cfdisk ${TGTDEV}
 
@@ -156,12 +163,9 @@ echo "127.0.1.1 ${HOSTNAME}.localdomain ${HOSTNAME}" >> /mnt/etc/hosts
 ln -s /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime # check into this may not be right
 hwclock --systohc
 pacman -Syu --noconfirm
-
-read -p "Enter password for root: " ROOTPASS && echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd
-
+echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd
 useradd -mg users -G wheel,storage,power -s /bin/zsh ${USERNAME}
-read "Enter password for ${USERNAME}: " USERPASS && echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}
-
+echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}
 chage -d 0 wilson
 sed -i -e 's/# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
 
