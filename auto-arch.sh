@@ -142,9 +142,9 @@ reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
 # diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc \
 # wpa_supplicant dialog os-prober xorg xorg-xinit xorg-xrandr openbox gnome-terminal \
 # firefox thunar nitrogen tint2 lxappearance
-pacstrap /mnt base base-devel linux linux-firmware nano vim zsh
+pacstrap /mnt base base-devel linux linux-firmware nano vim neovim git openssh networkmanager wget curl man-db man-pages exa dosfstools diffutils neofetch sl figlet cowsay ranger htop
 
-# Generate fstab
+# Generate fstab (EFI stuff is intentionally left out of this to save me from messing up something by accident)
 genfstab -U -p /mnt >> /mnt/etc/fstab
 
 ##############################################################################
@@ -166,19 +166,27 @@ pacman -Syu --noconfirm
 echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd
 useradd -mg users -G wheel,storage,power -s /bin/zsh ${USERNAME}
 echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}
-chage -d 0 wilson
 sed -i -e 's/# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
 
 pacman -S grub efibootmgr dosfstools os-prober mtools --noconfirm
 mkdir /boot/EFI
 mount ${TGTDEV}1 /boot/EFI
 
-genfstab -U -p / >> /etc/fstab
-
 grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
 grub-mkconfig -o /boot/grub/grub.cfg
+
+# Enable periodic TRIM
+systemctl enable fstrim.timer
+
+# Enable NetworkManager
+systemctl enable NetworkManager
+
+# Enable openssh
+systemctl enable sshd.service
+
+sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 EOF
-umount -a
+umount -R /mnt
 telinit 6
 
 ##############################################################################
