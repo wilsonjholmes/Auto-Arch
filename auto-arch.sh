@@ -59,8 +59,8 @@ echo "Here are the drives that are seen by your system." ; echo
 lsblk
 
 # Set drive for installation
-echo
-echo "Which drive you wish to install to? "
+echo ; echo
+echo "Which drive you wish to install to? " ; echo
 echo "Your argument should have a format like this -> '/dev/sda'"
 read -p "Enter the path to that drive that you wish to install to: " TGTDEV
 
