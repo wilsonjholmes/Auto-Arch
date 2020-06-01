@@ -78,6 +78,7 @@ genfstab -U -p /mnt >> /mnt/etc/fstab
 ##############################################################################
 # The folowing code block is exactly what i did to install based off of a guid on tecmint
 ##############################################################################
+arch-chroot /mnt <<EOF
 echo "archbox" > /etc/hostname
 pacman -S nano
 nano /etc/locale.gen # comment out the two en_US*
@@ -98,7 +99,7 @@ mkdir /boot/EFI
 mount /dev/sda1 /boot/EFI
 grub-install --target=x86_64-efi --bootloader-id=grub_uefi --recheck
 grub-mkconfig -o /boot/grub/grub.cfg
-exit
+EOF
 umount -a
 telinit 6
 
