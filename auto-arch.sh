@@ -19,7 +19,7 @@ CITY=Detroit
 
 echo "
 
-					  Welcome to...
+		      Welcome to...
 
       ___           ___           ___           ___     
      /\  \         /\__\         /\  \         /\  \    
@@ -45,7 +45,7 @@ echo "
      \/__/         \|__|         \/__/         \/__/    
 
      			
-     		   Press any key to continue.
+     	        Press any key to continue.
 "
 
 # Don't start until user is ready
@@ -120,7 +120,16 @@ mount ${TGTDEV}3 /mnt/home
 # Setup the cpu microcode package
 #read -p "Are you installing on a computer with an AMD[1] or Intel[2] cpu: " CPU
 
-# Minimal install with pacstrap (graphical setup will be done in another script)
+# Install reflector for sorting mirrors
+pacman -Sy reflector --noconfirm
+
+# Store a backup of the mirrors that came with the installation
+mv /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
+
+# Get the fastest in-sync (up-to-date) mirrors and store 10 of them (sorted) in mirrorlist
+reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
+
+# # Minimal install with pacstrap (graphical setup will be done in another script)
 # pacstrap /mnt base base-devel linux linux-firmware intel-ucode efibootmgr grub \
 # nano neovim git openssh networkmanager device-mapper mesa wget curl man-db man-pages \
 # diffutils zsh exa dosfstools neofetch sl figlet cowsay ranger htop pulseaudio tigervnc \
@@ -263,15 +272,6 @@ telinit 6
 # mkdir /boot/grub/
 # grub-mkconfig -o /boot/grub/grub.cfg
 # grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=arch_grub --recheck
-
-# # Install reflector for sorting mirrors
-# pacman -S reflector --noconfirm
-
-# # Store a backup of the mirrors that came with the installation
-# mv /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.backup
-
-# # Get the fastest in-sync (up-to-date) mirrors and store 10 of them (sorted) in mirrorlist
-# reflector -l 200 -f 10 --sort score > /etc/pacman.d/mirrorlist
 
 # # Enable periodic TRIM
 # systemctl enable fstrim.timer
