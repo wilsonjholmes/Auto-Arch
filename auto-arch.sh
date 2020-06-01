@@ -59,8 +59,8 @@ echo "Here are the drives that are seen by your system." ; echo
 lsblk
 
 # Set drive for installation
-echo ; echo
-echo "Which drive (from the above list) do you wish to install to? " ; echo ; echo
+echo ; echo ; echo
+echo "Which drive from the above list do you wish to install to? " ; echo
 echo "The path to your installation drive should have a format like this -> '/dev/sda'"
 read -p "Enter the path to that drive that you wish to install to: " TGTDEV
 
@@ -157,10 +157,10 @@ ln -s /usr/share/zoneinfo/${CONTINENT}/${CITY} /etc/localtime # check into this 
 hwclock --systohc
 pacman -Syu --noconfirm
 
-echo "Enter password for root: " && read ROOTPASS && echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd
+read -p "Enter password for root: " ROOTPASS && echo -e "${ROOTPASS}\n${ROOTPASS}" | passwd
 
 useradd -mg users -G wheel,storage,power -s /bin/zsh ${USERNAME}
-echo "Enter password for ${USERNAME}: " && read USERPASS && echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}
+read "Enter password for ${USERNAME}: " USERPASS && echo -e "${USERPASS}\n${USERPASS}" | passwd ${USERNAME}
 
 chage -d 0 wilson
 sed -i -e 's/# %wheel ALL=(ALL) NOPASSWD: ALL/%wheel ALL=(ALL) NOPASSWD: ALL/g' /etc/sudoers
